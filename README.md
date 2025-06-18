@@ -29,20 +29,20 @@ Maintains a token’s behavioral history to improve AI learning over time — he
 Solto is evolving from a secure wallet into a predictive intelligence layer for the Solana ecosystem — with multi-chain support and governance-ready functionality on the horizon.
 
 ### ✅ Q3 2025 — MVP Launch  
-- ✅ Core wallet functions: Send, Swap, NFTs, Activity  
-- ✅ **Chrono Key System** — Access control via wallet verification  
-- ✅ **AI Risk Tagging** — Real-time risk analysis and token labeling  
-- ⚠️ **Whale Cluster Alerts** *(Beta)* — Detection of centralized holder activity  
+✅ Core wallet functions: Send, Swap, NFTs, Activity  
+✅ **Chrono Key System** — Access control via wallet verification  
+✅ **AI Risk Tagging** — Real-time risk analysis and token labeling  
+⚠️ **Whale Cluster Alerts** *(Beta)* — Detection of centralized holder activity  
 
 ### 🔹 Q4 2025 — Expansion Layer  
-- 🔹 **Cross-Wallet Import** — Manage multiple wallets seamlessly  
-- 🔹 **Multi-Chain Support** — Ethereum, BSC and more  
-- 🔹 **Advanced Asset Statistics** — In-depth token metrics and visualizations  
+🔹 **Cross-Wallet Import** — Manage multiple wallets seamlessly  
+🔹 **Multi-Chain Support** — Ethereum, BSC and more  
+🔹 **Advanced Asset Statistics** — In-depth token metrics and visualizations  
 
 ### 🔮 Q1 2026 — Predictive Intelligence & Governance  
-- 🔹 **DEX Rate Prediction AI** — Estimate swap outcomes with machine learning  
-- 🔹 **Token Sentiment Sync** — Behavioral + social sentiment integration  
-- 🔹 **DAO Integration** — On-chain governance, proposals, and $SOLTO-based voting  
+🔹 **DEX Rate Prediction AI** — Estimate swap outcomes with machine learning  
+🔹 **Token Sentiment Sync** — Behavioral + social sentiment integration  
+🔹 **DAO Integration** — On-chain governance, proposals, and $SOLTO-based voting  
 
 ---
 ## 🧠 AI Functionality
