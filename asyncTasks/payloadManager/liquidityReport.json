@@ -1,0 +1,40 @@
+{
+  "soltoAuditId": "solto_audit_20250628_042",
+  "generatedAt": "2025-06-28T12:25:00Z",
+  "wallet": {
+    "address": "FJt8xk3qAsy3BGNq9YqTrRZ12eXbwV5rWh2hkShx9N3v",
+    "tags": ["⛔ flagged", "⚡ high-frequency"],
+    "activeSince": "2025-06-19T07:12:00Z"
+  },
+  "activitySnapshot": {
+    "transactions24h": 312,
+    "uniqueTokensInteracted": 18,
+    "mintedTokens": 3,
+    "bridgeEndpoints": [],
+    "totalVolumeSOL": 1987.43
+  },
+  "behaviorSignals": [
+    {
+      "type": "Mint Surge",
+      "description": "3 tokens minted in under 24 hours"
+    },
+    {
+      "type": "Bridge Oscillation",
+      "description": "Detected rhythmic in/out flows across bridges"
+    },
+    {
+      "type": "Transfer Storm",
+      "description": "Over 300 outbound txs in <24h — pattern matches scripted execution"
+    }
+  ],
+  "anomalyFlags": {
+    "mintingAnomaly": true,
+    "bridgeLooping": true,
+    "highTxDensity": true
+  },
+  "soltoVerdict": {
+    "status": "⚠ Watchlisted",
+    "riskScore": 87,
+    "nextStep": "Enable throttle. Recommend isolation of outbound flows"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "soltoScanId": "solto_trace_20250628_001",
+  "scannedAt": "2025-06-28T09:44:13Z",
+  "engine": "SoltoCore::TraceScope.v1",
+  "token": {
+    "symbol": "XYZ",
+    "mint": "7hsd83Ksnq3fa45sgYsA8TUGsRnb9uZ9qebFwXvJtvqX",
+    "status": "Unlabeled"
+  },
+  "anomalyMetrics": {
+    "liquidityShiftPercent": -46.3,
+    "uniqueBuyers": 12,
+    "verifiedActors": 0,
+    "volatilityScore": 88,
+    "txObserved": 97
+  },
+  "signalMap": {
+    "recentMintActivity": true,
+    "liquidityDrain": true,
+    "whaleInactivity": true,
+    "sybilPatternScore": 72
+  },
+  "flags": [
+    {
+      "type": "Liquidity Spike Loss",
+      "impact": "Loss >40% in 24h — pattern resembles withdrawal or trap setup"
+    },
+    {
+      "type": "Missing Strategic Entities",
+      "impact": "No signs of smart money — zero wallet clustering with known algos"
+    },
+    {
+      "type": "Sybil Risk",
+      "impact": "Score 72 — behavior cluster suggests inorganic coordination"
+    }
+  ],
+  "soltoSignal": {
+    "status": "Critical Watch",
+    "recommendedAction": "Throttle visibility & deprioritize routing",
+    "confidence": 0.92
+  }
+}
