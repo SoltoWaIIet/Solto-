@@ -1,24 +1,74 @@
 import { fetchWhaleTransfers } from "@/lib/solana/whales"
-import { analyzeBehavior } from "@/core/whale-patterns/analyzer"
+import { analyzeBehavior, BehaviorAnalysis } from "@/core/whale-patterns/analyzer"
 
-interface WhaleAction {
+export interface WhaleAction {
+  /** Wallet address initiating the transfer */
   wallet: string
+  /** Amount of tokens transferred */
   amount: number
+  /** Symbol of the token moved */
   token: string
+  /** Direction of movement */
   direction: "buy" | "sell"
+  /** Block number when the transfer occurred */
   block: number
 }
 
 export interface WhaleRadarReport {
+  /** All raw whale signals (optionally filtered & sorted) */
   signals: WhaleAction[]
+  /** Number of unique active wallets */
   activeCount: number
+  /** Largest single movement observed */
   peakAmount: number
+  /** Underlying behavior analysis details */
+  analysis: BehaviorAnalysis
 }
 
-export async function runWhaleRadarBeacon(token: string): Promise<WhaleRadarReport> {
-  const transfers = await fetchWhaleTransfers(token)
+export interface WhaleRadarOptions {
+  /** Minimum transfer amount to include in signals (default: 0 = include all) */
+  minAmount?: number
+  /** Maximum number of signals to return (default: unlimited) */
+  limit?: number
+  /** Sort signals by "amount" or "block" (default: "amount") */
+  sortBy?: "amount" | "block"
+  /** If true, descending order; else ascending (default: true) */
+  descending?: boolean
+}
 
-  const signals = transfers.map(t => ({
+/**
+ * Fetches recent large transfers (“whale moves”) for a token on Solana,
+ * filters, sorts, analyzes behavior, and returns a structured report.
+ *
+ * @param token        SPL token mint address or symbol
+ * @param opts         Radar configuration (thresholds, sorting, limits)
+ * @throws TypeError   If token is empty or invalid
+ * @throws Error       On fetch or analysis failure
+ */
+export async function runWhaleRadarBeacon(
+  token: string,
+  opts: WhaleRadarOptions = {}
+): Promise<WhaleRadarReport> {
+  if (typeof token !== "string" || token.trim() === "") {
+    throw new TypeError(`Invalid token identifier: '${token}'`)
+  }
+
+  const {
+    minAmount = 0,
+    limit,
+    sortBy = "amount",
+    descending = true
+  } = opts
+
+  let transfers
+  try {
+    transfers = await fetchWhaleTransfers(token)
+  } catch (err: any) {
+    throw new Error(`Failed to fetch whale transfers for ${token}: ${err.message}`)
+  }
+
+  // Map raw transfers into our WhaleAction format
+  const allSignals: WhaleAction[] = transfers.map(t => ({
     wallet: t.source,
     amount: t.amount,
     token: t.tokenSymbol,
@@ -26,11 +76,10 @@ export async function runWhaleRadarBeacon(token: string): Promise<WhaleRadarRepo
     block: t.blockNumber
   }))
 
-  const analysis = analyzeBehavior(signals)
+  // Filter out small movements
+  const filtered = allSignals.filter(sig => sig.amount >= minAmount)
 
-  return {
-    signals,
-    activeCount: analysis.uniqueWallets,
-    peakAmount: analysis.largestMovement
-  }
-}
+  // Sort according to options
+  const sorted = filtered.sort((a, b) => {
+    const fieldA = a[sortBy]
+    const fie
