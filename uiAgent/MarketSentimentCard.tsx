@@ -7,9 +7,9 @@ interface SentimentInsightProps {
 }
 
 const getTrendIcon = (trend: SentimentInsightProps["trend"]) => {
-  if (trend === "bullish") return <ArrowUpRight className="inline-block w-4 h-4 text-green-400" />
-  if (trend === "bearish") return <ArrowDownRight className="inline-block w-4 h-4 text-red-400" />
-  return <Minus className="inline-block w-4 h-4 text-gray-400" />
+  if (trend === "bullish") return <ArrowUpRight className="inline-block w-6 h-6 text-green-400 animate-pulse" />
+  if (trend === "bearish") return <ArrowDownRight className="inline-block w-6 h-6 text-red-400 animate-pulse" />
+  return <Minus className="inline-block w-6 h-6 text-gray-400" />
 }
 
 const getSentimentLabel = (score: number) => {
@@ -30,19 +30,19 @@ export function SentimentInsightFrame({ score, trend }: SentimentInsightProps) {
   const sentimentLabel = getSentimentLabel(score)
 
   return (
-    <div className="bg-zinc-900 p-5 rounded-2xl shadow-lg flex flex-col gap-2">
-      <h3 className="text-white text-lg font-semibold">Market Sentiment</h3>
+    <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 p-8 rounded-2xl shadow-2xl flex flex-col gap-4 transform hover:scale-105 transition-transform duration-300">
+      <h3 className="text-white text-2xl font-semibold">Market Sentiment</h3>
 
-      <div className={`text-4xl font-mono ${getColorClass(trend)}`}>
+      <div className={`text-6xl font-mono ${getColorClass(trend)} drop-shadow-lg`}>  
         {score > 0 ? "+" : ""}{score}
       </div>
 
-      <div className="flex items-center gap-2 text-sm uppercase text-gray-400">
+      <div className="flex items-center gap-3 text-base uppercase font-medium">
         {getTrendIcon(trend)}
-        <span>{trend}</span>
+        <span className={getColorClass(trend)}>{trend}</span>
       </div>
 
-      <p className="text-xs text-gray-500 italic">{sentimentLabel}</p>
+      <p className="text-sm text-gray-400 italic">{sentimentLabel}</p>
     </div>
   )
 }
