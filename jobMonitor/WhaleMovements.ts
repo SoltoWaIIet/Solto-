@@ -1,37 +1,126 @@
-import { Connection, PublicKey, ParsedConfirmedTransaction } from "@solana/web3.js"
+import { EventEmitter } from "events"
+import { z } from "zod"
 
-export class WhaleTracker {
-  private connection: Connection
-  private whaleThreshold: number
+// Schema to validate Metrics
+const metricsSchema = z.object({
+  timestamp: z.number().int().nonnegative(),
+  solBalance: z.number().nonnegative(),
+  tokenCount: z.number().int().nonnegative(),
+})
 
-  constructor(rpcUrl: string, threshold: number = 50000) {
-    this.connection = new Connection(rpcUrl, "confirmed")
-    this.whaleThreshold = threshold
+export interface Metrics {
+  timestamp: number
+  solBalance: number
+  tokenCount: number
+}
+
+// Summary result type
+export interface MetricsSummary {
+  totalRecords: number
+  avgSol: number
+  avgTokens: number
+  minSol: number | null
+  maxSol: number | null
+  minTokens: number | null
+  maxTokens: number | null
+}
+
+/**
+ * MetricsCore records time-series metrics and provides summaries
+ */
+export class MetricsCore extends EventEmitter {
+  private history: Metrics[] = []
+  private maxHistoryLength: number | null
+
+  /**
+   * @param maxHistoryLength Optional cap on stored history; null for unlimited
+   */
+  constructor(maxHistoryLength: number | null = null) {
+    super()
+    this.maxHistoryLength = maxHistoryLength
   }
 
-  async track(addresses: string[]): Promise<string[]> {
-    const flagged: string[] = []
+  /**
+   * Record a new metrics entry. Emits 'recorded'.
+   */
+  public record(m: Metrics): void {
+    const parsed = metricsSchema.parse(m)
+    this.history.push(parsed)
+    // enforce max length
+    if (
+      this.maxHistoryLength !== null &&
+      this.history.length > this.maxHistoryLength
+    ) {
+      this.history.shift()
+    }
+    this.emit("recorded", parsed)
+  }
 
-    for (const addr of addresses) {
-      const publicKey = new PublicKey(addr)
-      const txs = await this.connection.getSignaturesForAddress(publicKey, { limit: 5 })
+  /**
+   * Get the most recent metrics entry, or null if none
+   */
+  public latest(): Metrics | null {
+    return this.history.length
+      ? this.history[this.history.length - 1]
+      : null
+  }
 
-      for (const sig of txs) {
-        const tx = await this.connection.getParsedTransaction(sig.signature)
-        const volume = this.extractTokenVolume(tx)
-        if (volume > this.whaleThreshold) {
-          flagged.push(`${addr}:${volume}`)
-        }
+  /**
+   * Compute summary statistics over recorded history
+   */
+  public summary(): MetricsSummary {
+    const data = this.history
+    const total = data.length
+    if (total === 0) {
+      return {
+        totalRecords: 0,
+        avgSol: 0,
+        avgTokens: 0,
+        minSol: null,
+        maxSol: null,
+        minTokens: null,
+        maxTokens: null,
       }
     }
+    let sumSol = 0
+    let sumTokens = 0
+    let minSol = Infinity
+    let maxSol = -Infinity
+    let minTokens = Infinity
+    let maxTokens = -Infinity
 
-    return flagged
+    for (const { solBalance, tokenCount } of data) {
+      sumSol += solBalance
+      sumTokens += tokenCount
+      if (solBalance < minSol) minSol = solBalance
+      if (solBalance > maxSol) maxSol = solBalance
+      if (tokenCount < minTokens) minTokens = tokenCount
+      if (tokenCount > maxTokens) maxTokens = tokenCount
+    }
+
+    return {
+      totalRecords: total,
+      avgSol: sumSol / total,
+      avgTokens: sumTokens / total,
+      minSol,
+      maxSol,
+      minTokens,
+      maxTokens,
+    }
   }
 
-  private extractTokenVolume(tx: ParsedConfirmedTransaction | null): number {
-    if (!tx || !tx.meta) return 0
-    const pre = tx.meta.preBalances.reduce((a, b) => a + b, 0)
-    const post = tx.meta.postBalances.reduce((a, b) => a + b, 0)
-    return Math.abs(post - pre) / 1e9 // Convert lamports to SOL
+  /**
+   * Clears recorded history. Emits 'cleared'.
+   */
+  public clear(): void {
+    this.history = []
+    this.emit("cleared")
+  }
+
+  /**
+   * Get a deep copy of history
+   */
+  public getHistory(): Metrics[] {
+    return [...this.history]
   }
 }
