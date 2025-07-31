@@ -1,112 +1,42 @@
-// Types for Solto scan report
-export interface SoltoScanReport {
-  soltoScanId: string
-  scannedAt: string            // ISO timestamp
-  engine: string
-  token: {
-    symbol: string
-    mint: string
-    status: 'Unlabeled' | 'Labeled' | string
-  }
-  anomalyMetrics: {
-    liquidityShiftPercent: number
-    uniqueBuyers: number
-    verifiedActors: number
-    volatilityScore: number
-    txObserved: number
-  }
-  signalMap: {
-    recentMintActivity: boolean
-    liquidityDrain: boolean
-    whaleInactivity: boolean
-    sybilPatternScore: number
-  }
-  flags: Array<{
-    type: string
-    impact: string
-  }>
-  soltoSignal: {
-    status: 'Critical Watch' | 'Normal' | string
-    recommendedAction: string
-    confidence: number           // 0.0–1.0
-  }
-}
-
-/**
- * Parse and validate a raw JSON into SoltoScanReport
- */
-export function parseSoltoScanReport(raw: any): SoltoScanReport {
-  if (typeof raw !== 'object' || raw === null) {
-    throw new TypeError('Expected an object')
-  }
-
-  const {
-    soltoScanId,
-    scannedAt,
-    engine,
-    token,
-    anomalyMetrics,
-    signalMap,
-    flags,
-    soltoSignal
-  } = raw
-
-  // Quick runtime checks
-  if (typeof soltoScanId !== 'string') throw new TypeError('soltoScanId must be a string')
-  if (typeof scannedAt !== 'string') throw new TypeError('scannedAt must be a string')
-  if (typeof engine !== 'string') throw new TypeError('engine must be a string')
-
-  // Token block
-  if (typeof token !== 'object' || token === null) throw new TypeError('token block missing')
-  const { symbol, mint, status } = token
-  if (typeof symbol !== 'string') throw new TypeError('token.symbol must be a string')
-  if (typeof mint !== 'string') throw new TypeError('token.mint must be a string')
-  if (typeof status !== 'string') throw new TypeError('token.status must be a string')
-
-  // Anomaly metrics block
-  if (typeof anomalyMetrics !== 'object' || anomalyMetrics === null) throw new TypeError('anomalyMetrics block missing')
-  const {
-    liquidityShiftPercent,
-    uniqueBuyers,
-    verifiedActors,
-    volatilityScore,
-    txObserved
-  } = anomalyMetrics
-  for (const [key, val] of Object.entries({ liquidityShiftPercent, uniqueBuyers, verifiedActors, volatilityScore, txObserved })) {
-    if (typeof val !== 'number') throw new TypeError(`anomalyMetrics.${key} must be a number`)
-  }
-
-  // Signal map block
-  if (typeof signalMap !== 'object' || signalMap === null) throw new TypeError('signalMap block missing')
-  const { recentMintActivity, liquidityDrain, whaleInactivity, sybilPatternScore } = signalMap
-  if (typeof recentMintActivity !== 'boolean') throw new TypeError('signalMap.recentMintActivity must be boolean')
-  if (typeof liquidityDrain !== 'boolean') throw new TypeError('signalMap.liquidityDrain must be boolean')
-  if (typeof whaleInactivity !== 'boolean') throw new TypeError('signalMap.whaleInactivity must be boolean')
-  if (typeof sybilPatternScore !== 'number') throw new TypeError('signalMap.sybilPatternScore must be number')
-
-  // Flags array
-  if (!Array.isArray(flags)) throw new TypeError('flags must be an array')
-  flags.forEach((f, i) => {
-    if (typeof f !== 'object' || f === null) throw new TypeError(`flags[${i}] must be an object`)
-    if (typeof f.type !== 'string') throw new TypeError(`flags[${i}].type must be string`)
-    if (typeof f.impact !== 'string') throw new TypeError(`flags[${i}].impact must be string`)
-  })
-
-  // Solto signal
-  if (typeof soltoSignal !== 'object' || soltoSignal === null) throw new TypeError('soltoSignal block missing')
-  const { status: sigStatus, recommendedAction, confidence } = soltoSignal
-  if (typeof sigStatus !== 'string') throw new TypeError('soltoSignal.status must be string')
-  if (typeof recommendedAction !== 'string') throw new TypeError('soltoSignal.recommendedAction must be string')
-  if (typeof confidence !== 'number') throw new TypeError('soltoSignal.confidence must be number')
-
-  return {
-    soltoScanId,
-    scannedAt,
-    engine,
-    token: { symbol, mint, status },
-    anomalyMetrics: { liquidityShiftPercent, uniqueBuyers, verifiedActors, volatilityScore, txObserved },
-    signalMap: { recentMintActivity, liquidityDrain, whaleInactivity, sybilPatternScore },
-    flags: flags.map(({ type, impact }) => ({ type, impact })),
-    soltoSignal: { status: sigStatus, recommendedAction, confidence },
+{
+  "soltoScanId": "solto_trace_20250628_001",
+  "scannedAt": "2025-06-28T09:44:13Z",
+  "engine": "SoltoCore::TraceScope.v1",
+  "token": {
+    "symbol": "XYZ",
+    "mint": "7hsd83Ksnq3fa45sgYsA8TUGsRnb9uZ9qebFwXvJtvqX",
+    "status": "Unlabeled"
+  },
+  "anomalyMetrics": {
+    "liquidityShiftPercent": -46.3,
+    "uniqueBuyers": 12,
+    "verifiedActors": 0,
+    "volatilityScore": 88,
+    "txObserved": 97
+  },
+  "signalMap": {
+    "recentMintActivity": true,
+    "liquidityDrain": true,
+    "whaleInactivity": true,
+    "sybilPatternScore": 72
+  },
+  "flags": [
+    {
+      "type": "Liquidity Spike Loss",
+      "impact": "Loss >40% in 24h — pattern resembles withdrawal or trap setup"
+    },
+    {
+      "type": "Missing Strategic Entities",
+      "impact": "No signs of smart money — zero wallet clustering with known algos"
+    },
+    {
+      "type": "Sybil Risk",
+      "impact": "Score 72 — behavior cluster suggests inorganic coordination"
+    }
+  ],
+  "soltoSignal": {
+    "status": "Critical Watch",
+    "recommendedAction": "Throttle visibility & deprioritize routing",
+    "confidence": 0.92
   }
 }
