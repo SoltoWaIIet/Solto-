@@ -10,18 +10,32 @@ interface TokenPulseResult {
 }
 
 export async function getTokenPulseCard(symbol: string): Promise<TokenPulseResult> {
-  const overview = await fetchTokenOverview(symbol)
+  try {
+    const {
+      volume24h: volumeUSD,
+      liquidity: liquidityUSD,
+      recentPrices,
+      recentVolumes
+    } = await fetchTokenOverview(symbol)
 
-  const volatility = computeVolatilityScore(
-    overview.recentPrices,
-    overview.recentVolumes
-  )
+    const volatility = computeVolatilityScore(recentPrices, recentVolumes)
 
-  return {
-    symbol,
-    volumeUSD: overview.volume24h,
-    liquidityUSD: overview.liquidity,
-    volatility,
-    updatedAt: new Date().toISOString()
+    return {
+      symbol,
+      volumeUSD,
+      liquidityUSD,
+      volatility,
+      updatedAt: new Date().toISOString(),
+    }
+
+  } catch (error) {
+    console.error(`Failed to load pulse for ${symbol}:`, error)
+    return {
+      symbol,
+      volumeUSD: 0,
+      liquidityUSD: 0,
+      volatility: 0,
+      updatedAt: new Date().toISOString(),
+    }
   }
 }
