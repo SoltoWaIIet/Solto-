@@ -1,7 +1,6 @@
 import { Connection, PublicKey, ParsedTransactionWithMeta } from "@solana/web3.js"
 import { z } from "zod"
 
-/** Zod schemas */
 const trackParamsSchema = z.object({
   mint: z.string().refine(s => {
     try { new PublicKey(s); return true } catch { return false }
@@ -9,7 +8,6 @@ const trackParamsSchema = z.object({
   maxSlots: z.number().int().nonnegative().default(50),
 })
 
-/** Transfer event */
 interface TransferEvent {
   signature: string
   source: string
@@ -19,7 +17,6 @@ interface TransferEvent {
   timestamp: number
 }
 
-/** Summary of flows */
 interface FlowSummary {
   token: string
   totalTransfers: number
@@ -28,10 +25,7 @@ interface FlowSummary {
   suspiciousFlows: string[]
 }
 
-/**
- * Scans recent blocks for SPL token transfers of a given mint,
- * then returns a JSON string of FlowSummary.
- */
+
 export async function trackTransferFlowRaw(
   connection: Connection,
   params: unknown
