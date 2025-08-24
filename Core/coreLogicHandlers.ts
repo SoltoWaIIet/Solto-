@@ -1,7 +1,3 @@
-/**
- * coreLogicMap.ts
- * Maps core operations to their handler functions.
- */
 
 import type { TransferOptions } from "./vaultCoreEngine"
 import { VaultTasksHandler } from "./vaultTasksHandler"
