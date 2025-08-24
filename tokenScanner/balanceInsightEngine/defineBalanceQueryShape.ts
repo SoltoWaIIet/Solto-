@@ -76,10 +76,30 @@ export async function runWhaleRadarBeacon(
     block: t.blockNumber
   }))
 
-  // Filter out small movements
+  // Filter out small movements (if any)
   const filtered = allSignals.filter(sig => sig.amount >= minAmount)
 
-  // Sort according to options
+  // Sort according to options (ascending or descending)
   const sorted = filtered.sort((a, b) => {
     const fieldA = a[sortBy]
-    const fie
+    const fieldB = b[sortBy]
+    if (fieldA === fieldB) return 0
+    return descending ? fieldB - fieldA : fieldA - fieldB
+  })
+
+  // Optionally limit the number of signals
+  const limited = limit && limit > 0 ? sorted.slice(0, limit) : sorted
+
+  // Perform behavior analysis on the filtered & sorted signals
+  const analysis = analyzeBehavior(limited)
+
+  // Prepare the report
+  const report: WhaleRadarReport = {
+    signals: limited,
+    activeCount: new Set(limited.map(signal => signal.wallet)).size,
+    peakAmount: Math.max(...limited.map(signal => signal.amount), 0),
+    analysis
+  }
+
+  return report
+}
