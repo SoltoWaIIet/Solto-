@@ -1,280 +1,42 @@
-// soltoReport.ts
-import { z } from "zod"
-
-/** ---------- Types ---------- */
-
-export type SoltoStatus = "Unlabeled" | "Benign" | "Watch" | "Critical Watch"
-
-export interface SoltoToken {
-  symbol: string
-  mint: string
-  status: SoltoStatus | string
-}
-
-export interface AnomalyMetrics {
-  liquidityShiftPercent: number
-  uniqueBuyers: number
-  verifiedActors: number
-  volatilityScore: number // 0..100
-  txObserved: number
-}
-
-export interface SignalMap {
-  recentMintActivity: boolean
-  liquidityDrain: boolean
-  whaleInactivity: boolean
-  sybilPatternScore: number // 0..100
-}
-
-export interface SoltoFlag {
-  type: string
-  impact: string
-}
-
-export interface SoltoSignal {
-  status: SoltoStatus
-  recommendedAction: string
-  confidence: number // 0..1
-}
-
-export interface SoltoReport {
-  soltoScanId: string
-  scannedAt: string // ISO
-  engine: string
-  token: SoltoToken
-  anomalyMetrics: AnomalyMetrics
-  signalMap: SignalMap
-  flags: SoltoFlag[]
-  soltoSignal: SoltoSignal
-}
-
-/** ---------- Zod Schemas & Validation ---------- */
-
-const tokenSchema = z.object({
-  symbol: z.string().min(1),
-  mint: z.string().min(32),
-  status: z.string().min(1),
-})
-
-const anomalySchema = z.object({
-  liquidityShiftPercent: z.number(), // negative = loss
-  uniqueBuyers: z.number().int().nonnegative(),
-  verifiedActors: z.number().int().nonnegative(),
-  volatilityScore: z.number().min(0).max(100),
-  txObserved: z.number().int().nonnegative(),
-})
-
-const signalSchema = z.object({
-  recentMintActivity: z.boolean(),
-  liquidityDrain: z.boolean(),
-  whaleInactivity: z.boolean(),
-  sybilPatternScore: z.number().min(0).max(100),
-})
-
-const flagSchema = z.object({
-  type: z.string().min(1),
-  impact: z.string().min(1),
-})
-
-const soltoSignalSchema = z.object({
-  status: z.enum(["Unlabeled", "Benign", "Watch", "Critical Watch"]).or(z.string().min(1)),
-  recommendedAction: z.string().min(1),
-  confidence: z.number().min(0).max(1),
-})
-
-export const soltoReportSchema = z.object({
-  soltoScanId: z.string().min(1),
-  scannedAt: z.string().datetime(),
-  engine: z.string().min(1),
-  token: tokenSchema,
-  anomalyMetrics: anomalySchema,
-  signalMap: signalSchema,
-  flags: z.array(flagSchema),
-  soltoSignal: soltoSignalSchema,
-})
-
-export type ParsedSoltoReport = z.infer<typeof soltoReportSchema>
-
-/** ---------- Parsing & Normalization ---------- */
-
-export function parseSoltoReport(input: unknown): ParsedSoltoReport {
-  return soltoReportSchema.parse(input)
-}
-
-export function normalizeStatus(s: string): SoltoStatus {
-  const t = s.toLowerCase()
-  if (t.includes("critical")) return "Critical Watch"
-  if (t.includes("watch")) return "Watch"
-  if (t.includes("benign")) return "Benign"
-  return "Unlabeled"
-}
-
-/** ---------- Derived Assessment ---------- */
-
-export interface DerivedAssessment {
-  severity: "Low" | "Moderate" | "High" | "Critical"
-  score: number // 0..100
-  reasons: string[]
-  recommendedAction: string
-  confidence: number // 0..1
-}
-
-export function assess(report: ParsedSoltoReport): DerivedAssessment {
-  const { anomalyMetrics: m, signalMap: s, flags, soltoSignal } = report
-
-  let score = 0
-  const reasons: string[] = []
-
-  // Liquidity loss
-  if (m.liquidityShiftPercent <= -40) {
-    score += 30
-    reasons.push(`Liquidity loss ${m.liquidityShiftPercent}%`)
-  } else if (m.liquidityShiftPercent <= -20) {
-    score += 18
-    reasons.push(`Liquidity loss ${m.liquidityShiftPercent}%`)
+{
+  "soltoScanId": "solto_trace_20250628_001",
+  "scannedAt": "2025-06-28T09:44:13Z",
+  "engine": "SoltoCore::TraceScope.v1",
+  "token": {
+    "symbol": "XYZ",
+    "mint": "7hsd83Ksnq3fa45sgYsA8TUGsRnb9uZ9qebFwXvJtvqX",
+    "status": "Unlabeled"
+  },
+  "anomalyMetrics": {
+    "liquidityShiftPercent": -46.3,
+    "uniqueBuyers": 12,
+    "verifiedActors": 0,
+    "volatilityScore": 88,
+    "txObserved": 97
+  },
+  "signalMap": {
+    "recentMintActivity": true,
+    "liquidityDrain": true,
+    "whaleInactivity": true,
+    "sybilPatternScore": 72
+  },
+  "flags": [
+    {
+      "type": "Liquidity Spike Loss",
+      "impact": "Loss >40% in 24h — pattern resembles withdrawal or trap setup"
+    },
+    {
+      "type": "Missing Strategic Entities",
+      "impact": "No signs of smart money — zero wallet clustering with known algos"
+    },
+    {
+      "type": "Sybil Risk",
+      "impact": "Score 72 — behavior cluster suggests inorganic coordination"
+    }
+  ],
+  "soltoSignal": {
+    "status": "Critical Watch",
+    "recommendedAction": "Throttle visibility & deprioritize routing",
+    "confidence": 0.92
   }
-
-  // Volatility
-  if (m.volatilityScore >= 85) {
-    score += 20
-    reasons.push(`High volatility score ${m.volatilityScore}`)
-  } else if (m.volatilityScore >= 70) {
-    score += 12
-    reasons.push(`Elevated volatility score ${m.volatilityScore}`)
-  }
-
-  // Verified actors absence
-  if (m.verifiedActors === 0) {
-    score += 10
-    reasons.push("No verified actors")
-  }
-
-  // Low unique buyers when many tx observed can indicate wash/fragmentation
-  if (m.txObserved >= 80 && m.uniqueBuyers < 15) {
-    score += 10
-    reasons.push(`Buyer concentration: ${m.uniqueBuyers} buyers over ${m.txObserved} tx`)
-  }
-
-  // Signals
-  if (s.liquidityDrain) {
-    score += 15
-    reasons.push("Liquidity drain signal")
-  }
-  if (s.recentMintActivity) {
-    score += 6
-    reasons.push("Recent mint activity")
-  }
-  if (s.whaleInactivity) {
-    score += 6
-    reasons.push("Whale inactivity")
-  }
-  if (s.sybilPatternScore >= 70) {
-    score += 20
-    reasons.push(`Sybil pattern score ${s.sybilPatternScore}`)
-  } else if (s.sybilPatternScore >= 50) {
-    score += 10
-    reasons.push(`Sybil pattern score ${s.sybilPatternScore}`)
-  }
-
-  // Flags add weight
-  if (flags?.length) {
-    const criticalFlags = flags.filter(f =>
-      /liquidity|sybil|exploit|trap|withdrawal/i.test(f.type + " " + f.impact)
-    )
-    score += Math.min(15, criticalFlags.length * 5)
-  }
-
-  // Clamp score
-  score = Math.max(0, Math.min(100, Math.round(score)))
-
-  let severity: DerivedAssessment["severity"] = "Low"
-  if (score >= 80) severity = "Critical"
-  else if (score >= 60) severity = "High"
-  else if (score >= 35) severity = "Moderate"
-
-  // Merge recommendation: prioritize stricter of our rule vs report suggestion
-  const suggested = soltoSignal?.recommendedAction ?? ""
-  const recommendedAction =
-    severity === "Critical"
-      ? "Throttle visibility & deprioritize routing"
-      : severity === "High"
-      ? "Deprioritize and require higher routing confidence"
-      : severity === "Moderate"
-      ? "Caution flag; monitor closely"
-      : "No special handling"
-
-  const confidence =
-    soltoSignal?.confidence != null
-      ? clamp01(0.6 * (score / 100) + 0.4 * soltoSignal.confidence)
-      : clamp01(score / 100)
-
-  // Prefer explicit instruction if provided and stricter than ours
-  const strict = strictestAction(suggested, recommendedAction)
-
-  return { severity, score, reasons, recommendedAction: strict, confidence }
 }
-
-/** ---------- Utilities ---------- */
-
-function clamp01(n: number) {
-  return Math.max(0, Math.min(1, n))
-}
-
-function strictestAction(a: string, b: string): string {
-  const rank = (x: string) => {
-    const t = x.toLowerCase()
-    if (t.includes("throttle") || t.includes("block") || t.includes("halt")) return 3
-    if (t.includes("deprioritize") || t.includes("restrict")) return 2
-    if (t.includes("caution") || t.includes("monitor")) return 1
-    return 0
-  }
-  return rank(a) >= rank(b) ? a : b
-}
-
-/** Render a concise markdown summary */
-export function toMarkdownSummary(report: ParsedSoltoReport, derived = assess(report)): string {
-  const { token, soltoScanId, scannedAt, engine } = report
-  const lines: string[] = []
-  lines.push(`### ${token.symbol} (${token.mint})`)
-  lines.push(`Scan: \`${soltoScanId}\` • Engine: \`${engine}\` • Time: \`${scannedAt}\``)
-  lines.push(`**Status:** ${normalizeStatus(report.soltoSignal?.status ?? token.status)}  `)
-  lines.push(`**Severity:** ${derived.severity} (${derived.score}/100) • **Confidence:** ${(derived.confidence * 100).toFixed(0)}%`)
-  lines.push("")
-  if (derived.reasons.length) {
-    lines.push("**Drivers:**")
-    for (const r of derived.reasons.slice(0, 8)) lines.push(`- ${r}`)
-  }
-  if (report.flags?.length) {
-    lines.push("")
-    lines.push("**Flags:**")
-    for (const f of report.flags.slice(0, 6)) lines.push(`- ${f.type}: ${f.impact}`)
-  }
-  lines.push("")
-  lines.push(`**Recommended Action:** ${derived.recommendedAction}`)
-  return lines.join("\n")
-}
-
-/** Example: parse from JSON string safely */
-export function parseJsonReport(json: string): ParsedSoltoReport {
-  let raw: unknown
-  try {
-    raw = JSON.parse(json)
-  } catch (e) {
-    throw new Error("Invalid JSON")
-  }
-  return parseSoltoReport(raw)
-}
-
-/** Merge multiple reports (latest wins) and compute aggregate assessment */
-export function mergeReports(reports: ParsedSoltoReport[]): { latest: ParsedSoltoReport; assessment: DerivedAssessment } {
-  if (!reports.length) throw new Error("No reports")
-  const latest = reports
-    .slice()
-    .sort((a, b) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime())[0]
-  return { latest, assessment: assess(latest) }
-}
-
-/** ---------- Example usage (comment out in prod) ---------- */
-// const input: SoltoReport = /* paste object here */
-// const parsed = parseSoltoReport(input)
-// console.log(toMarkdownSummary(parsed))
